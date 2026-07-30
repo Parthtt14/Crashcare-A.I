@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>CrashCare AI</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1565C0">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --blue:#1565C0;
+    --blue-dark:#0D47A1;
+    --red:#D32F2F;
+    --red-dark:#B71C1C;
+    --green:#2E7D32;
+    --bg:#F5F7FA;
+    --card:#FFFFFF;
+    --text:#1B1F24;
+    --muted:#6B7684;
+    --border:#E4E8EE;
+    --radius:18px;
+  }
+  [data-theme="dark"]{
+    --bg:#10151C;
+    --card:#1A212B;
+    --text:#EDF1F5;
+    --muted:#8B95A3;
+    --border:#2A323D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    overscroll-behavior:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom:78px;
+  }
+  header.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 20px 14px;
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:5;
+  }
+  header.topbar h1{
+    font-size:20px;
+    margin:0;
+    font-weight:700;
+    letter-spacing:.2px;
+  }
+  header.topbar .sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:2px;
+  }
+  .icon-btn{
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--card);border:1px solid var(--border);
+    cursor:pointer;color:var(--text);
+  }
+  main{flex:1;padding:0 16px 16px;}
+  section.view{display:none;animation:fadein .25s ease;}
+  section.view.active{display:block;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h3{margin:0 0 10px;font-size:15px;font-weight:700;}
+  .muted{color:var(--muted);}
+
+  /* Protection dial */
+  .protection-card{
+    display:flex;align-items:center;gap:16px;
+    padding:20px;
+  }
+  .dial{
+    width:76px;height:76px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:#9AA5B1; flex-shrink:0;
+    transition:background .3s, box-shadow .3s;
+    color:white; cursor:pointer; border:none;
+  }
+  .dial.on{
+    background:var(--green);
+    box-shadow:0 0 0 8px rgba(46,125,50,.15);
+  }
+  .dial svg{width:34px;height:34px;}
+  .protection-text h2{margin:0 0 4px;font-size:17px;}
+  .protection-text p{margin:0;font-size:13px;color:var(--muted);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .stat{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:14px;
+  }
+  .stat .val{font-weight:700;font-size:15px;margin-top:18px;}
+  .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .list-item{
+    display:flex;align-items:center;gap:12px;
+    padding:12px 4px;border-bottom:1px solid var(--border);
+  }
+  .list-item:last-child{border-bottom:none;}
+  .avatar{
+    width:42px;height:42px;border-radius:50%;
+    background:var(--blue);color:white;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;flex-shrink:0;
+  }
+  .list-item .info{flex:1;min-width:0;}
+  .list-item .info .name{font-weight:600;font-size:14px;}
+  .list-item .info .sub{font-size:12px;color:var(--muted);}
+  .list-item .actions{display:flex;gap:6px;}
+  .list-item .actions button{
+    background:none;border:none;color:var(--muted);
+    width:34px;height:34px;border-radius:50%;cursor:pointer;
+  }
+  .list-item .actions button:active{background:var(--border);}
+
+  button.primary{
+    width:100%;padding:14px;border-radius:14px;border:none;
+    background:var(--blue);color:white;font-size:15px;font-weight:700;
+    cursor:pointer;
+  }
+  button.danger{background:var(--red);}
+  button.ghost{
+    width:100%;padding:14px;border-radius:14px;
+    background:transparent;border:2px solid var(--border);color:var(--text);
+    font-size:15px;font-weight:600;cursor:pointer;
+  }
+  button.small{
+    padding:8px 14px;border-radius:10px;font-size:13px;border:none;
+    background:var(--blue);color:white;font-weight:600;cursor:pointer;
+  }
+  input,select,textarea{
+    width:100%;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--border);background:var(--bg);color:var(--text);
+    font-size:14px;margin-bottom:10px;font-family:inherit;
+  }
+  label.field-label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;font-weight:600;}
+
+  nav.tabbar{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:480px;margin:0 auto;
+    background:var(--card);border-top:1px solid var(--border);
+    display:flex;justify-content:space-around;
+    padding:8px 6px 12px;
+    z-index:10;
+  }
+  nav.tabbar button{
+    background:none;border:none;color:var(--muted);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    font-size:10px;cursor:pointer;padding:4px 6px;
+  }
+  nav.tabbar button svg{width:22px;height:22px;}
+  nav.tabbar button.active{color:var(--blue);}
+
+  /* Emergency overlay */
+  #emergencyOverlay{
+    position:fixed;inset:0;z-index:999;
+    display:none;
+    background:var(--red-dark);
+    color:white;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 24px;
+    text-align:center;
+  }
+  #emergencyOverlay.show{display:flex;}
+  #emergencyOverlay h2{font-size:24px;margin:18px 0 4px;}
+  #emergencyOverlay p.lead{margin:0;color:rgba(255,255,255,.8);font-size:16px;}
+  .ring-wrap{position:relative;width:190px;height:190px;margin:28px 0;}
+  .ring-wrap svg{transform:rotate(-90deg);}
+  .ring-bg{fill:none;stroke:rgba(255,255,255,.2);stroke-width:10;}
+  .ring-fg{fill:none;stroke:white;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+  .ring-num{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:52px;font-weight:800;
+  }
+  #emergencyOverlay .actions{width:100%;margin-top:auto;display:flex;flex-direction:column;gap:12px;}
+  #emergencyOverlay .btn-safe{
+    background:white;color:var(--green);border:none;border-radius:14px;
+    padding:16px;font-size:17px;font-weight:800;cursor:pointer;
+  }
+  #emergencyOverlay .btn-sos{
+    background:transparent;color:white;border:2px solid white;border-radius:14px;
+    padding:16px;font-size:17px;font-weight:800;cursor:pointer;
+  }
+
+  #sosSentPanel, #safePanel{display:none;}
+  #sosSentPanel.show, #safePanel.show{display:flex;}
+  .receipt{
+    background:white;color:var(--text);border-radius:16px;padding:16px;
+    text-align:left;width:100%;margin:18px 0;
+  }
+  .receipt .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;}
+  .receipt .row:last-child{border-bottom:none;}
+  .receipt .row .k{color:var(--muted);}
+  .contact-alert{
+    display:flex;align-items:center;justify-content:space-between;
+    background:rgba(255,255,255,.12);border-radius:12px;padding:10px 14px;margin-bottom:8px;width:100%;
+  }
+  .contact-alert button{
+    background:white;color:var(--red-dark);border:none;border-radius:10px;
+    padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;
+  }
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--text);color:var(--bg);padding:10px 18px;border-radius:30px;
+    font-size:13px;z-index:1200;opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state svg{width:56px;height:56px;opacity:.4;margin-bottom:12px;}
+
+  .segmented{display:flex;background:var(--bg);border-radius:12px;padding:4px;border:1px solid var(--border);margin-bottom:6px;}
+  .segmented button{
+    flex:1;padding:9px;border:none;background:none;border-radius:9px;
+    font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;
+  }
+  .segmented button.active{background:var(--blue);color:white;}
+
+  .sens-option{
+    border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px;cursor:pointer;
+  }
+  .sens-option.active{border-color:var(--blue);background:rgba(21,101,192,.08);}
+  .sens-option .t{font-weight:700;font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+  .sens-option .d{font-size:12px;color:var(--muted);margin-top:3px;}
+  .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);}
+  .sens-option.active .dot{border-color:var(--blue);background:var(--blue);}
+
+  .switch{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:#C6CCD4;border-radius:20px;cursor:pointer;transition:.2s;}
+  .slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;}
+  input:checked + .slider{background:var(--blue);}
+  input:checked + .slider:before{transform:translateX(20px);}
+
+  .disclaimer{font-size:11px;color:var(--muted);text-align:center;padding:8px 20px 0;line-height:1.5;}
+</style>
+</head>
+<body data-theme="light">
+<div id="app">
+
+  <header class="topbar">
+    <div>
+      <h1>CrashCare AI</h1>
+      <div class="sub" id="headerSub">Local, private, always ready</div>
+    </div>
+    <div class="icon-btn" onclick="showView('settings')">⚙️</div>
+  </header>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="card protection-card">
+        <button class="dial" id="protectionDial" onclick="toggleProtection()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </button>
+        <div class="protection-text">
+          <h2 id="protectionTitle">Protection Off</h2>
+          <p id="protectionSub">Tap the shield to start monitoring</p>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="stat">
+          <div>📡</div>
+          <div class="val" id="statDetection">Inactive</div>
+          <div class="lbl">Accident Detection</div>
+        </div>
+        <div class="stat">
+          <div>⏱️</div>
+          <div class="val" id="statCountdown">Idle</div>
+          <div class="lbl">Countdown Status</div>
+        </div>
+        <div class="stat">
+          <div>👥</div>
+          <div class="val" id="statContacts">0 saved</div>
+          <div class="lbl">Emergency Contacts</div>
+        </div>
+        <div class="stat">
+          <div>📜</div>
+          <div class="val" id="statHistory">0 events</div>
+          <div class="lbl">SOS History</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Quick Actions</h3>
+        <div class="list-item" onclick="showView('contacts')">
+          <div class="avatar">👥</div>
+          <div class="info"><div class="name">Emergency Contacts</div><div class="sub">Add or manage who gets alerted</div></div>
+          <div>›</div>
+        </div>
+        <div class="list-item" onclick="showView('medical')">
+          <div class="avatar">🩺</div>
+          <div class="info"><div class="name">Medical Profile</div><div class="sub">Blood group, allergies, conditions</div></div>
+          <div>›</div>
+        </div>
+        <div class="list-item" onclick="showView('history')">
+          <div class="avatar">📜</div>
+          <div class="info"><div class="name">SOS History</div><div class="sub">View past alerts</div></div>
+          <div>›</div>
+        </div>
+        <div class="list-item" id="testRow" style="display:none;" onclick="simulateAccident()">
+          <div class="avatar" style="background:var(--red)">🧪</div>
+          <div class="info"><div class="name">Simulate Accident (Test)</div><div class="sub">Try the alert flow safely</div></div>
+          <div>›</div>
+        </div>
+      </div>
+
+      <p class="disclaimer">Educational safety project. Not a certified crash-detection system — always call emergency services directly if you're in real danger.</p>
+    </section>
+
+    <!-- CONTACTS -->
+    <section class="view" id="view-contacts">
+      <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="margin:0;">Emergency Contacts</h3>
+        <button class="small" onclick="openContactForm()">+ Add</button>
+      </div>
+      <div class="card" id="contactsListWrap">
+        <div id="contactsList"></div>
+        <div class="empty-state" id="contactsEmpty">
+          <div>🙋</div>
+          <div>No emergency contacts yet.<br>Add the people who should be notified.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEDICAL -->
+    <section class="view" id="view-medical">
+      <div class="card">
+        <h3>Medical Profile</h3>
+        <p class="muted" style="font-size:12px;margin-top:-6px;">Shown to your contacts along with an SOS alert.</p>
+        <label class="field-label">Full Name</label>
+        <input id="medName" placeholder="Your name">
+        <label class="field-label">Blood Group</label>
+        <select id="medBlood">
+          <option value="">Select</option>
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option><option>Unknown</option>
+        </select>
+        <label class="field-label">Age</label>
+        <input id="medAge" type="number" placeholder="e.g. 20">
+        <label class="field-label">Allergies</label>
+        <textarea id="medAllergies" rows="2" placeholder="e.g. Penicillin, Peanuts"></textarea>
+        <label class="field-label">Medical Conditions</label>
+        <textarea id="medConditions" rows="2" placeholder="e.g. Asthma"></textarea>
+        <label class="field-label">Emergency Notes</label>
+        <textarea id="medNotes" rows="2" placeholder="Anything responders should know"></textarea>
+        <button class="primary" onclick="saveMedical()">Save Profile</button>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" id="view-history">
+      <div class="card">
+        <h3>SOS History</h3>
+        <div id="historyList"></div>
+        <div class="empty-state" id="historyEmpty">
+          <div>🛡️</div>
+          <div>No SOS alerts recorded yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="card">
+        <h3>Appearance</h3>
+        <div class="segmented">
+          <button id="themeLightBtn" onclick="setTheme('light')">Light</button>
+          <button id="themeDarkBtn" onclick="setTheme('dark')">Dark</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Notifications</h3>
+        <div class="list-item" style="border:none;padding:4px;">
+          <div class="info"><div class="name">Enable Alerts</div><div class="sub">Accident & SOS notifications</div></div>
+          <label class="switch">
+            <input type="checkbox" id="notifToggle" onchange="toggleNotifications(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>AI Detection Sensitivity</h3>
+        <div class="sens-option" id="sens-low" onclick="setSensitivity('low')">
+          <div class="t">Low <span class="dot"></span></div>
+          <div class="d">Fewer false alarms, may miss minor impacts</div>
+        </div>
+        <div class="sens-option" id="sens-medium" onclick="setSensitivity('medium')">
+          <div class="t">Medium (Recommended) <span class="dot"></span></div>
+          <div class="d">Balanced detection with AI filtering</div>
+        </div>
+        <div class="sens-option" id="sens-high" onclick="setSensitivity('high')">
+          <div class="t">High <span class="dot"></span></div>
+          <div class="d">More sensitive, may trigger more often</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>About</h3>
+        <p class="muted" style="font-size:13px;">CrashCare AI stores everything only on this device — contacts, medical info and history never leave your phone. Built for a college project; not a substitute for calling emergency services.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="dashboard" onclick="showView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/></svg>
+      Home
+    </button>
+    <button class="tab-btn" data-tab="contacts" onclick="showView('contacts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Contacts
+    </button>
+    <button class="tab-btn" data-tab="medical" onclick="showView('medical')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      Medical
+    </button>
+    <button class="tab-btn" data-tab="history" onclick="showView('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      History
+    </button>
+    <button class="tab-btn" data-tab="settings" onclick="showView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 000-6M4.6 15a1.7 1.7 0 010-6M15 4.6a1.7 1.7 0 00-6 0M15 19.4a1.7 1.7 0 01-6 0"/></svg>
+      Settings
+    </button>
+  </nav>
+
+</div>
+
+<!-- EMERGENCY COUNTDOWN OVERLAY -->
+<div id="emergencyOverlay">
+
+  <div id="countdownPanel" style="display:flex;flex-direction:column;align-items:center;width:100%;flex:1;">
+    <div style="font-size:52px;margin-top:18px;">⚠️</div>
+    <h2>Possible Accident Detected!</h2>
+    <p class="lead">Are you OK?</p>
+    <div class="ring-wrap">
+      <svg width="190" height="190">
+        <circle class="ring-bg" cx="95" cy="95" r="80"></circle>
+        <circle class="ring-fg" id="ringFg" cx="95" cy="95" r="80" stroke-dasharray="502" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="ring-num" id="countdownNum">15</div>
+    </div>
+    <p style="font-size:13px;color:rgba(255,255,255,.75);">Emergency SOS will be sent automatically<br>if there is no response.</p>
+    <div class="actions">
+      <button class="btn-safe" onclick="confirmSafe()">✅ I'm Safe</button>
+      <button class="btn-sos" onclick="sendSosNow()">🚨 Send SOS Now</button>
+    </div>
+  </div>
+
+  <div id="safePanel" style="flex-direction:column;align-items:center;width:100%;flex:1;justify-content:center;">
+    <div style="font-size:60px;">✅</div>
+    <h2>Emergency Cancelled</h2>
+    <p class="lead">Glad you're safe. Protection remains active.</p>
+    <div class="actions"><button class="btn-safe" onclick="closeOverlay()">Back to Dashboard</button></div>
+  </div>
+
+  <div id="sosSentPanel" style="flex-direction:column;align-items:center;width:100%;flex:1;">
+    <div style="font-size:56px;margin-top:10px;">🆘</div>
+    <h2>Emergency SOS Sent Successfully</h2>
+    <div class="receipt" id="sosReceipt"></div>
+    <div id="contactAlertList" style="width:100%;"></div>
+    <div class="actions" style="margin-top:10px;">
+      <button class="btn-safe" onclick="closeOverlay()">Back to Dashboard</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- CONTACT FORM MODAL (reuses emergency overlay styling but separate) -->
+<div id="contactModalBg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;">
+  <div style="position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;background:var(--card);border-radius:20px 20px 0 0;padding:20px;">
+    <h3 id="contactModalTitle" style="margin-top:0;">Add Emergency Contact</h3>
+    <label class="field-label">Full Name</label>
+    <input id="cName" placeholder="e.g. Mom">
+    <label class="field-label">Phone Number</label>
+    <input id="cPhone" type="tel" placeholder="e.g. 9876543210">
+    <label class="field-label">Relation</label>
+    <input id="cRelation" placeholder="e.g. Mother, Friend">
+    <button class="primary" onclick="saveContact()">Save Contact</button>
+    <button class="ghost" style="margin-top:10px;" onclick="closeContactForm()">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* ---------------------------------------------------------
+   CrashCare AI — local-first, privacy-respecting web app.
+   All data lives in localStorage on this device only.
+--------------------------------------------------------- */
+
+const store = {
+  get(key, fallback){ try{ const v = localStorage.getItem('cc_'+key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } },
+  set(key, val){ localStorage.setItem('cc_'+key, JSON.stringify(val)); }
+};
+
+let state = {
+  protectionOn: false,
+  countdownStatus: 'idle', // idle | counting | safe | sent
+  secondsLeft: 15,
+  contacts: store.get('contacts', []),
+  medical: store.get('medical', {}),
+  history: store.get('history', []),
+  theme: store.get('theme', 'light'),
+  notifications: store.get('notifications', true),
+  sensitivity: store.get('sensitivity', 'medium'),
+  editingContactId: null
+};
+
+let countdownTimer = null;
+let motionHandler = null;
+let lastAlertTime = 0;
+let accelHistory = [];
+
+// ---------------- View switching ----------------
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  if(name === 'contacts') renderContacts();
+  if(name === 'history') renderHistory();
+  if(name === 'medical') loadMedicalForm();
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ---------------- Protection & sensors ----------------
+function toggleProtection(){
+  state.protectionOn = !state.protectionOn;
+  if(state.protectionOn){
+    requestSensorPermission().then(()=>{
+      startMotionListener();
+      toast('Protection turned ON');
+    });
+    document.getElementById('testRow').style.display = 'flex';
+  } else {
+    stopMotionListener();
+    document.getElementById('testRow').style.display = 'none';
+    toast('Protection turned OFF');
+  }
+  updateDashboard();
+}
+
+async function requestSensorPermission(){
+  // iOS Safari requires explicit permission; Android Chrome does not.
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+    try{ await DeviceMotionEvent.requestPermission(); }catch(e){}
+  }
+  if ('Notification' in window && Notification.permission === 'default'){
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+}
+
+function sensitivityThresholds(){
+  switch(state.sensitivity){
+    case 'high': return { accel: 14, jerkWindow: 6 };
+    case 'low': return { accel: 28, jerkWindow: 10 };
+    default: return { accel: 20, jerkWindow: 8 };
+  }
+}
+
+function startMotionListener(){
+  stopMotionListener();
+  accelHistory = [];
+  motionHandler = function(e){
+    const a = e.accelerationIncludingGravity || e.acceleration;
+    if(!a || a.x === null) return;
+    const magnitude = Math.sqrt((a.x||0)**2 + (a.y||0)**2 + (a.z||0)**2);
+    const delta = Math.abs(magnitude - 9.8);
+    accelHistory.push(delta);
+    if(accelHistory.length > 12) accelHistory.shift();
+    evaluateAccident(delta, e.rotationRate);
+  };
+  window.addEventListener('devicemotion', motionHandler);
+}
+
+function stopMotionListener(){
+  if(motionHandler) window.removeEventListener('devicemotion', motionHandler);
+  motionHandler = null;
+}
+
+function evaluateAccident(delta, rotationRate){
+  const { accel } = sensitivityThresholds();
+  if(delta < accel * 0.6) return;
+
+  let confidence = 0;
+  if(delta >= accel) confidence += 0.55;
+  else if(delta >= accel * 0.75) confidence += 0.25;
+
+  let gyroMag = 0;
+  if(rotationRate){
+    gyroMag = Math.sqrt((rotationRate.alpha||0)**2 + (rotationRate.beta||0)**2 + (rotationRate.gamma||0)**2);
+    if(gyroMag >= 90) confidence += 0.30;
+    else if(gyroMag >= 50) confidence += 0.15;
+  }
+
+  if(accelHistory.length >= 8){
+    const peak = Math.max(...accelHistory);
+    const recentAvg = accelHistory.slice(-3).reduce((a,b)=>a+b,0)/3;
+    if(peak >= accel && recentAvg < accel * 0.35) confidence += 0.20;
+  }
+
+  if(confidence >= 0.65){
+    const now = Date.now();
+    if(now - lastAlertTime < 20000) return; // cooldown
+    lastAlertTime = now;
+    triggerAccidentDetected('Sudden impact detected (confidence ' + Math.round(confidence*100) + '%)');
+  }
+}
+
+function simulateAccident(){
+  triggerAccidentDetected('Manually simulated for testing');
+}
+
+// ---------------- Emergency countdown flow ----------------
+function triggerAccidentDetected(reason){
+  if(state.countdownStatus === 'counting') return;
+  state.lastReason = reason;
+  state.countdownStatus = 'counting';
+  state.secondsLeft = 15;
+  updateDashboard();
+  showOverlayPanel('countdown');
+  notifyUser('Possible Accident Detected!', "Are you OK? Tap to respond before the countdown ends.");
+
+  const ring = document.getElementById('ringFg');
+  const circumference = 2 * Math.PI * 80;
+  ring.setAttribute('stroke-dasharray', circumference);
+
+  clearInterval(countdownTimer);
+  document.getElementById('countdownNum').textContent = state.secondsLeft;
+  ring.setAttribute('stroke-dashoffset', 0);
+
+  countdownTimer = setInterval(()=>{
+    state.secondsLeft--;
+    document.getElementById('countdownNum').textContent = Math.max(state.secondsLeft,0);
+    const offset = circumference * (1 - state.secondsLeft/15);
+    ring.setAttribute('stroke-dashoffset', offset);
+    if(state.secondsLeft <= 0){
+      clearInterval(countdownTimer);
+      sendSos();
+    }
+  }, 1000);
+}
+
+function confirmSafe(){
+  clearInterval(countdownTimer);
+  state.countdownStatus = 'safe';
+  updateDashboard();
+  showOverlayPanel('safe');
+}
+
+function sendSosNow(){
+  clearInterval(countdownTimer);
+  sendSos();
+}
+
+function sendSos(){
+  state.countdownStatus = 'sent';
+  updateDashboard();
+
+  const event = {
+    id: 'e'+Date.now(),
+    timestamp: new Date().toISOString(),
+    status: 'Sent',
+    reason: state.lastReason || 'Sudden impact detected'
+  };
+  state.history.unshift(event);
+  store.set('history', state.history);
+
+  const name = (state.medical.name && state.medical.name.trim()) || 'User';
+  notifyUser('Emergency SOS Sent Successfully', name + "'s emergency contacts have been notified.");
+
+  renderSosReceipt(name, event.timestamp);
+  showOverlayPanel('sent');
+}
+
+function renderSosReceipt(name, iso){
+  const d = new Date(iso);
+  const dateStr = d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}) + ', ' +
+                  d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('sosReceipt').innerHTML = `
+    <div class="row"><div class="k">Name</div><div>${escapeHtml(name)}</div></div>
+    <div class="row"><div class="k">Status</div><div>Possible accident detected.</div></div>
+    <div class="row"><div class="k">Date &amp; Time</div><div>${dateStr}</div></div>
+  `;
+
+  const msg = `CrashCare AI Alert: ${name} may have been in an accident.\nStatus: Possible accident detected.\nTime: ${dateStr}` +
+    (state.medical.bloodGroup ? `\nBlood Group: ${state.medical.bloodGroup}` : '') +
+    (state.medical.allergies ? `\nAllergies: ${state.medical.allergies}` : '') +
+    `\nPlease check on them.`;
+
+  const listEl = document.getElementById('contactAlertList');
+  if(state.contacts.length === 0){
+    listEl.innerHTML = `<p style="color:rgba(255,255,255,.8);font-size:13px;">No emergency contacts saved yet — add some in the Contacts tab so alerts have somewhere to go.</p>`;
+    return;
+  }
+  listEl.innerHTML = state.contacts.map(c => `
+    <div class="contact-alert">
+      <span>${escapeHtml(c.name)} (${escapeHtml(c.phone)})</span>
+      <button onclick="notifyContact('${c.phone}', \`${encodeURIComponent(msg)}\`)">Notify</button>
+    </div>
+  `).join('') + `<p style="color:rgba(255,255,255,.65);font-size:11px;margin-top:6px;">
+      Tap each contact to open your messaging app with the alert pre-filled — browsers can't send SMS silently on their own, so one tap per contact confirms it goes out.
+    </p>`;
+
+  // Try to auto-open the first contact's SMS composer immediately (a plain
+  // navigation, not a popup, so most mobile browsers allow it).
+  if(state.contacts[0]){
+    try{
+      window.location.href = `sms:${state.contacts[0].phone}?body=${encodeURIComponent(msg)}`;
+    }catch(e){}
+  }
+}
+
+function notifyContact(phone, encodedMsg){
+  window.location.href = `sms:${phone}?body=${encodedMsg}`;
+}
+
+function showOverlayPanel(which){
+  document.getElementById('emergencyOverlay').classList.add('show');
+  document.getElementById('countdownPanel').style.display = which==='countdown' ? 'flex' : 'none';
+  document.getElementById('safePanel').style.display = which==='safe' ? 'flex' : 'none';
+  document.getElementById('sosSentPanel').style.display = which==='sent' ? 'flex' : 'none';
+}
+
+function closeOverlay(){
+  document.getElementById('emergencyOverlay').classList.remove('show');
+  state.countdownStatus = 'idle';
+  updateDashboard();
+}
+
+// ---------------- Notifications ----------------
+function notifyUser(title, body){
+  if(!state.notifications) return;
+  if('Notification' in window && Notification.permission === 'granted'){
+    try{ new Notification(title, {body, icon:'icons/icon-192.png'}); }catch(e){}
+  }
+}
+
+function toggleNotifications(val){
+  state.notifications = val;
+  store.set('notifications', val);
+  if(val && 'Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+}
+
+// ---------------- Contacts ----------------
+function renderContacts(){
+  const wrap = document.getElementById('contactsList');
+  const empty = document.getElementById('contactsEmpty');
+  if(state.contacts.length === 0){
+    wrap.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  wrap.innerHTML = state.contacts.map(c => `
+    <div class="list-item">
+      <div class="avatar">${escapeHtml((c.name||'?')[0].toUpperCase())}</div>
+      <div class="info">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="sub">${escapeHtml(c.phone)}${c.relation? ' • '+escapeHtml(c.relation):''}</div>
+      </div>
+      <div class="actions">
+        <button onclick="openContactForm('${c.id}')">✏️</button>
+        <button onclick="deleteContact('${c.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openContactForm(id){
+  state.editingContactId = id || null;
+  const c = id ? state.contacts.find(x=>x.id===id) : null;
+  document.getElementById('contactModalTitle').textContent = id ? 'Edit Contact' : 'Add Emergency Contact';
+  document.getElementById('cName').value = c ? c.name : '';
+  document.getElementById('cPhone').value = c ? c.phone : '';
+  document.getElementById('cRelation').value = c ? c.relation : '';
+  document.getElementById('contactModalBg').style.display = 'block';
+}
+function closeContactForm(){
+  document.getElementById('contactModalBg').style.display = 'none';
+}
+function saveContact(){
+  const name = document.getElementById('cName').value.trim();
+  const phone = document.getElementById('cPhone').value.trim();
+  const relation = document.getElementById('cRelation').value.trim();
+  if(!name || !phone){ toast('Name and phone are required'); return; }
+
+  if(state.editingContactId){
+    const c = state.contacts.find(x=>x.id===state.editingContactId);
+    c.name = name; c.phone = phone; c.relation = relation;
+  } else {
+    state.contacts.push({ id:'c'+Date.now(), name, phone, relation });
+  }
+  store.set('contacts', state.contacts);
+  closeContactForm();
+  renderContacts();
+  updateDashboard();
+  toast('Contact saved');
+}
+function deleteContact(id){
+  state.contacts = state.contacts.filter(c=>c.id!==id);
+  store.set('contacts', state.contacts);
+  renderContacts();
+  updateDashboard();
+}
+
+// ---------------- Medical profile ----------------
+function loadMedicalForm(){
+  const m = state.medical;
+  document.getElementById('medName').value = m.name||'';
+  document.getElementById('medBlood').value = m.bloodGroup||'';
+  document.getElementById('medAge').value = m.age||'';
+  document.getElementById('medAllergies').value = m.allergies||'';
+  document.getElementById('medConditions').value = m.conditions||'';
+  document.getElementById('medNotes').value = m.notes||'';
+}
+function saveMedical(){
+  state.medical = {
+    name: document.getElementById('medName').value.trim(),
+    bloodGroup: document.getElementById('medBlood').value,
+    age: document.getElementById('medAge').value.trim(),
+    allergies: document.getElementById('medAllergies').value.trim(),
+    conditions: document.getElementById('medConditions').value.trim(),
+    notes: document.getElementById('medNotes').value.trim(),
+  };
+  store.set('medical', state.medical);
+  toast('Medical profile saved');
+}
+
+// ---------------- History ----------------
+function renderHistory(){
+  const wrap = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  if(state.history.length === 0){
+    wrap.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  wrap.innerHTML = state.history.map(h => {
+    const d = new Date(h.timestamp);
+    const dateStr = d.toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}) + ', ' +
+                    d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    return `<div class="list-item">
+      <div class="avatar" style="background:var(--red)">🆘</div>
+      <div class="info"><div class="name">SOS ${escapeHtml(h.status)}</div><div class="sub">${dateStr}<br>${escapeHtml(h.reason)}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ---------------- Settings ----------------
+function setTheme(t){
+  state.theme = t;
+  store.set('theme', t);
+  document.body.setAttribute('data-theme', t);
+  document.getElementById('themeLightBtn').classList.toggle('active', t==='light');
+  document.getElementById('themeDarkBtn').classList.toggle('active', t==='dark');
+}
+function setSensitivity(s){
+  state.sensitivity = s;
+  store.set('sensitivity', s);
+  ['low','medium','high'].forEach(x => document.getElementById('sens-'+x).classList.toggle('active', x===s));
+}
+
+// ---------------- Dashboard refresh ----------------
+function updateDashboard(){
+  const dial = document.getElementById('protectionDial');
+  dial.classList.toggle('on', state.protectionOn);
+  document.getElementById('protectionTitle').textContent = state.protectionOn ? 'Protection ON' : 'Protection Off';
+  document.getElementById('protectionSub').textContent = state.protectionOn
+    ? 'Monitoring for possible accidents' : 'Tap the shield to start monitoring';
+  document.getElementById('statDetection').textContent = state.protectionOn ? 'Active' : 'Inactive';
+
+  const csLabel = { idle:'Idle', counting:'Counting down', safe:'Marked safe', sent:'SOS sent' };
+  document.getElementById('statCountdown').textContent = csLabel[state.countdownStatus];
+  document.getElementById('statContacts').textContent = state.contacts.length + ' saved';
+  document.getElementById('statHistory').textContent = state.history.length + ' events';
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ---------------- Init ----------------
+(function init(){
+  setTheme(state.theme);
+  setSensitivity(state.sensitivity);
+  document.getElementById('notifToggle').checked = state.notifications;
+  updateDashboard();
+
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>
